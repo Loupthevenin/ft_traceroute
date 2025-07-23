@@ -72,7 +72,7 @@ int	resolve_target(t_trace *trace)
 	ft_memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_protocol = IPPROTO_ICMP;
+	/* hints.ai_protocol = IPPROTO_ICMP; */
 	ret = getaddrinfo(trace->target, NULL, &hints, &res);
 	if (ret != 0)
 	{

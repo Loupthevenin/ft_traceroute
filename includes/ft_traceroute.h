@@ -8,6 +8,8 @@
 # include <sys/socket.h>
 # include <sys/types.h>
 
+# define MAX_TTL 30
+
 typedef struct s_trace
 {
 	char	*target;
