@@ -34,5 +34,10 @@ void	print_rtt(double rtt)
 
 	int_part = (int)rtt;
 	frac_part = (int)((rtt - int_part) * 1000);
-	ft_printf("%d.%03d ms", int_part, frac_part);
+	if (frac_part < 10)
+		ft_printf("%d.00%d ms", int_part, frac_part);
+	else if (frac_part < 100)
+		ft_printf("%d.0%d ms", int_part, frac_part);
+	else
+		ft_printf("%d.%d ms", int_part, frac_part);
 }
