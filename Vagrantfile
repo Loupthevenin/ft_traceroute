@@ -18,7 +18,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", inline: <<-SHELL
     apt-get update
-    apt-get install -y gcc make traceroute inetutils-ping net-tools procps
+    apt-get install -y gcc make libreadline-dev traceroute inetutils-ping net-tools procps
     sysctl -w net.ipv4.ping_group_range="0 2147483647"
   SHELL
 end
