@@ -106,6 +106,9 @@ static void	run_traceroute(t_trace *trace)
 	double				rtt;
 	struct sockaddr_in	from;
 	char				host[NI_MAXHOST];
+	int					replies;
+	char				last_ip[INET_ADDRSTRLEN];
+	int					finished;
 
 	struct timeval start, end;
 	pid = getpid();
@@ -113,53 +116,59 @@ static void	run_traceroute(t_trace *trace)
 	sockfd = create_socket(trace);
 	ft_memset(&dest, 0, sizeof(dest));
 	dest.sin_family = AF_INET;
+	finished = 0;
 	if (inet_pton(AF_INET, trace->ip_str, &dest.sin_addr) != 1)
 	{
 		ft_putstr_fd("inet_pton: failed\n", 2);
 		free_trace(trace);
 		exit(EXIT_FAILURE);
 	}
-	for (int ttl = 1; ttl <= MAX_TTL; ttl++, seq++)
+	for (int ttl = 1; ttl <= MAX_TTL && !finished; ttl++)
 	{
+		replies = 0;
+		ft_bzero(last_ip, sizeof(last_ip));
 		ft_printf("%d  ", ttl);
-		gettimeofday(&start, NULL);
-		if (send_probe(sockfd, &dest, ttl, seq, pid) < 0)
+		for (int i = 0; i < 3; i++, seq++)
 		{
-			ft_printf("*\n");
-			continue ;
-		}
-		status = receive_reply(sockfd, ip_str, pid, &from);
-		if (status == 2 || status == 1)
-		{
-			gettimeofday(&end, NULL);
-			rtt = (end.tv_sec - start.tv_sec) * 1000.0 +
-				(end.tv_usec - start.tv_usec) / 1000.0;
-			if (getnameinfo((struct sockaddr *)&from, sizeof(from), host,
-					sizeof(host), NULL, 0, 0) == 0)
+			gettimeofday(&start, NULL);
+			if (send_probe(sockfd, &dest, ttl, seq, pid) < 0)
 			{
-				ft_printf("%s (%s)  ", host, ip_str);
+				ft_printf("*\n");
+				continue ;
+			}
+			status = receive_reply(sockfd, ip_str, pid, &from);
+			if (status == 2 || status == 1)
+			{
+				gettimeofday(&end, NULL);
+				rtt = (end.tv_sec - start.tv_sec) * 1000.0 +
+					(end.tv_usec - start.tv_usec) / 1000.0;
+				if (replies == 0 || ft_strcmp(last_ip, ip_str) != 0)
+				{
+					if (getnameinfo((struct sockaddr *)&from, sizeof(from),
+							host, sizeof(host), NULL, 0, 0) == 0)
+						ft_printf("%s (%s)  ", host, ip_str);
+					else
+						ft_printf("%s  ", ip_str);
+					ft_strlcpy(last_ip, ip_str, sizeof(last_ip));
+				}
 				print_rtt(rtt);
-				ft_printf("\n");
+				ft_printf(" ");
+				replies++;
+				if (status == 2)
+					finished = 1;
+			}
+			else if (ip_str[0])
+			{
+				if (getnameinfo((struct sockaddr *)&from, sizeof(from), host,
+						sizeof(host), NULL, 0, 0) == 0)
+					ft_printf("%s (%s)\n", host, ip_str);
+				else
+					ft_printf("%s\n", ip_str);
 			}
 			else
-			{
-				ft_printf("%s  ", ip_str);
-				print_rtt(rtt);
-				ft_printf("\n");
-			}
-			if (status == 2)
-				break ;
+				ft_printf("* ");
 		}
-		else if (ip_str[0])
-		{
-			if (getnameinfo((struct sockaddr *)&from, sizeof(from), host,
-					sizeof(host), NULL, 0, 0) == 0)
-				ft_printf("%s (%s)\n", host, ip_str);
-			else
-				ft_printf("%s\n", ip_str);
-		}
-		else
-			ft_printf("*\n");
+		ft_printf("\n");
 	}
 	close(sockfd);
 }
