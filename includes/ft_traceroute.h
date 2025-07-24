@@ -36,5 +36,6 @@ int					resolve_target(t_trace *trace);
 // Utils
 void				free_trace(t_trace *trace);
 unsigned short		checksum(void *data, int len);
+void				print_rtt(double rtt);
 
 #endif

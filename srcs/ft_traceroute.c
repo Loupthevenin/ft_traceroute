@@ -14,7 +14,7 @@ static int	create_socket(t_trace *trace)
 {
 	int	result;
 
-	result = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
+	result = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if (result < 0)
 	{
 		ft_putstr_fd("Error: socket", 2);
@@ -46,7 +46,8 @@ static int	send_probe(int sockfd, struct sockaddr_in *dest, int ttl, int seq,
 	return (0);
 }
 
-static int	receive_reply(int sockfd, char *ip_str_buf, int pid)
+static int	receive_reply(int sockfd, char *ip_str_buf, int pid,
+		struct sockaddr_in *from_out)
 {
 	char				buffer[1024];
 	struct sockaddr_in	from;
@@ -78,6 +79,7 @@ static int	receive_reply(int sockfd, char *ip_str_buf, int pid)
 		ft_putstr_fd("Error: recvfrom", 2);
 		return (-1);
 	}
+	memcpy(from_out, &from, sizeof(struct sockaddr_in));
 	ip_hdr = (struct ip *)buffer;
 	icmp_hdr = (t_icmp_echo *)(buffer + (ip_hdr->ip_hl << 2));
 	if (icmp_hdr->type == ICMP_ECHOREPLY && ntohs(icmp_hdr->id) == pid)
@@ -102,11 +104,12 @@ static void	run_traceroute(t_trace *trace)
 	char				ip_str[INET_ADDRSTRLEN];
 	struct sockaddr_in	dest;
 	double				rtt;
+	struct sockaddr_in	from;
+	char				host[NI_MAXHOST];
 
 	struct timeval start, end;
 	pid = getpid();
 	seq = 0;
-	gettimeofday(&start, NULL);
 	sockfd = create_socket(trace);
 	ft_memset(&dest, 0, sizeof(dest));
 	dest.sin_family = AF_INET;
@@ -119,20 +122,41 @@ static void	run_traceroute(t_trace *trace)
 	for (int ttl = 1; ttl <= MAX_TTL; ttl++, seq++)
 	{
 		ft_printf("%d  ", ttl);
+		gettimeofday(&start, NULL);
 		if (send_probe(sockfd, &dest, ttl, seq, pid) < 0)
 		{
 			ft_printf("*\n");
 			continue ;
 		}
-		status = receive_reply(sockfd, ip_str, pid);
+		status = receive_reply(sockfd, ip_str, pid, &from);
 		if (status == 2 || status == 1)
 		{
 			gettimeofday(&end, NULL);
 			rtt = (end.tv_sec - start.tv_sec) * 1000.0 +
 				(end.tv_usec - start.tv_usec) / 1000.0;
-			ft_printf("%s  %.3f ms\n", ip_str, rtt);
+			if (getnameinfo((struct sockaddr *)&from, sizeof(from), host,
+					sizeof(host), NULL, 0, 0) == 0)
+			{
+				ft_printf("%s (%s)  ", host, ip_str);
+				print_rtt(rtt);
+				ft_printf("\n");
+			}
+			else
+			{
+				ft_printf("%s  ", ip_str);
+				print_rtt(rtt);
+				ft_printf("\n");
+			}
 			if (status == 2)
 				break ;
+		}
+		else if (ip_str[0])
+		{
+			if (getnameinfo((struct sockaddr *)&from, sizeof(from), host,
+					sizeof(host), NULL, 0, 0) == 0)
+				ft_printf("%s (%s)\n", host, ip_str);
+			else
+				ft_printf("%s\n", ip_str);
 		}
 		else
 			ft_printf("*\n");
@@ -148,7 +172,8 @@ int	main(int argc, char **argv)
 	trace.ip_str = NULL;
 	parse_traceroute(argc, argv, &trace);
 	resolve_target(&trace);
-	ft_printf("Target resolved: %s (%s)\n", trace.target, trace.ip_str);
+	ft_printf("ft_traceroute to %s (%s), %d hops max\n", trace.target,
+			trace.ip_str, MAX_TTL);
 	run_traceroute(&trace);
 	free_trace(&trace);
 	return (0);

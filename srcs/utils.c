@@ -26,3 +26,13 @@ unsigned short	checksum(void *data, int len)
 	sum += (sum >> 16);
 	return (~sum);
 }
+
+void	print_rtt(double rtt)
+{
+	int	int_part;
+	int	frac_part;
+
+	int_part = (int)rtt;
+	frac_part = (int)((rtt - int_part) * 1000);
+	ft_printf("%d.%03d ms", int_part, frac_part);
+}
