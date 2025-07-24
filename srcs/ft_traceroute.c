@@ -148,7 +148,7 @@ static void	run_traceroute(t_trace *trace)
 							host, sizeof(host), NULL, 0, 0) == 0)
 						ft_printf("%s (%s)  ", host, ip_str);
 					else
-						ft_printf("%s  ", ip_str);
+						ft_printf("%s (%s)  ", ip_str, ip_str);
 					ft_strlcpy(last_ip, ip_str, sizeof(last_ip));
 				}
 				print_rtt(rtt);
@@ -156,14 +156,6 @@ static void	run_traceroute(t_trace *trace)
 				replies++;
 				if (status == 2)
 					finished = 1;
-			}
-			else if (ip_str[0])
-			{
-				if (getnameinfo((struct sockaddr *)&from, sizeof(from), host,
-						sizeof(host), NULL, 0, 0) == 0)
-					ft_printf("%s (%s)\n", host, ip_str);
-				else
-					ft_printf("%s\n", ip_str);
 			}
 			else
 				ft_printf("* ");
