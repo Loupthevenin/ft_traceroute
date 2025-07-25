@@ -106,9 +106,9 @@ static void	run_traceroute(t_trace *trace)
 	double				rtt;
 	struct sockaddr_in	from;
 	char				host[NI_MAXHOST];
-	int					replies;
 	char				last_ip[INET_ADDRSTRLEN];
 	int					finished;
+	int					ip_displayed;
 
 	struct timeval start, end;
 	pid = getpid();
@@ -125,9 +125,9 @@ static void	run_traceroute(t_trace *trace)
 	}
 	for (int ttl = 1; ttl <= MAX_TTL && !finished; ttl++)
 	{
-		replies = 0;
 		ft_bzero(last_ip, sizeof(last_ip));
 		ft_printf("%d  ", ttl);
+		ip_displayed = 0;
 		for (int i = 0; i < 3; i++, seq++)
 		{
 			gettimeofday(&start, NULL);
@@ -142,7 +142,7 @@ static void	run_traceroute(t_trace *trace)
 				gettimeofday(&end, NULL);
 				rtt = (end.tv_sec - start.tv_sec) * 1000.0 +
 					(end.tv_usec - start.tv_usec) / 1000.0;
-				if (replies == 0 || ft_strcmp(last_ip, ip_str) != 0)
+				if (!ip_displayed)
 				{
 					if (getnameinfo((struct sockaddr *)&from, sizeof(from),
 							host, sizeof(host), NULL, 0, 0) == 0)
@@ -150,10 +150,10 @@ static void	run_traceroute(t_trace *trace)
 					else
 						ft_printf("%s (%s)  ", ip_str, ip_str);
 					ft_strlcpy(last_ip, ip_str, sizeof(last_ip));
+					ip_displayed = 1;
 				}
 				print_rtt(rtt);
 				ft_printf(" ");
-				replies++;
 				if (status == 2)
 					finished = 1;
 			}
