@@ -3,11 +3,13 @@
 void	init_icmp_echo(t_icmp_echo *icmp, int sequence, int pid)
 {
 	icmp->type = ICMP_ECHO;
+	// Type 8 = Echo Request
 	icmp->code = 0;
-	icmp->id = htons(pid);
-	icmp->sequence = htons(sequence);
-	icmp->checksum = 0;
-	icmp->checksum = checksum(icmp, sizeof(t_icmp_echo));
+	// Code est toujours 0 pour Echo Request
+	icmp->id = htons(pid);                                // PID
+	icmp->sequence = htons(sequence);                     // Numero
+	icmp->checksum = 0;                                   // Init a 0
+	icmp->checksum = checksum(icmp, sizeof(t_icmp_echo)); // Ajoute le checksum
 }
 
 static int	create_socket(t_trace *trace)
@@ -46,6 +48,11 @@ static int	send_probe(int sockfd, struct sockaddr_in *dest, int ttl, int seq,
 	return (0);
 }
 
+/// Attend une réponse ICMP d’un routeur ou de la destination.
+/// Analyse les paquets reçus et retourne un status :
+/// - 2 si ECHO REPLY (destination atteinte)
+/// - 1 si TIME EXCEEDED (routeur intermédiaire)
+/// - 0 sinon
 static int	receive_reply(int sockfd, char *ip_str_buf, int pid,
 		struct sockaddr_in *from_out)
 {
@@ -70,7 +77,7 @@ static int	receive_reply(int sockfd, char *ip_str_buf, int pid,
 		return (-1);
 	}
 	else if (ready == 0)
-		return (0);
+		return (0); // Timeout
 	from_len = sizeof(from);
 	bytes = recvfrom(sockfd, buffer, sizeof(buffer), 0,
 			(struct sockaddr *)&from, &from_len);
@@ -85,12 +92,12 @@ static int	receive_reply(int sockfd, char *ip_str_buf, int pid,
 	if (icmp_hdr->type == ICMP_ECHOREPLY && ntohs(icmp_hdr->id) == pid)
 	{
 		ft_strlcpy(ip_str_buf, inet_ntoa(from.sin_addr), INET_ADDRSTRLEN);
-		return (2);
+		return (2); // Destination atteinte
 	}
 	else if (icmp_hdr->type == 11)
 	{
 		ft_strlcpy(ip_str_buf, inet_ntoa(from.sin_addr), INET_ADDRSTRLEN);
-		return (1);
+		return (1); // TTL Exceeded (routeur)
 	}
 	return (0);
 }

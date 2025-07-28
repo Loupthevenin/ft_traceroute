@@ -8,6 +8,8 @@ void	free_trace(t_trace *trace)
 		free(trace->ip_str);
 }
 
+/// Calcule le checksum ICMP pour valider l'intégrité du message.
+/// C'est la somme des mots de 16 bits, puis inversion binaire (~).
 unsigned short	checksum(void *data, int len)
 {
 	unsigned int	sum;
